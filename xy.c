@@ -8,10 +8,15 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
+#include <linux/joystick.h>
 
 #include "pigpio.h"
 
 #include "xy.h"
+
+int *axis = NULL;
+char *button = NULL;
+int num_of_axis = 0;
 
 int main()
 {
@@ -50,19 +55,46 @@ int main()
 	time_t t;
 	srand((unsigned) time(&t));
 
+	
+	// initialize the xbox one controller
+	int joy_fd, num_of_buttons=0;
+	char  name_of_joystick[80];
+
+	if( ( joy_fd = open( JOY_DEV , O_RDONLY)) == -1 )
+	{
+		printf( "Couldn't open joystick\n" );
+		return -1;
+	}
+
+	ioctl( joy_fd, JSIOCGAXES, &num_of_axis );
+	ioctl( joy_fd, JSIOCGBUTTONS, &num_of_buttons );
+	ioctl( joy_fd, JSIOCGNAME(80), &name_of_joystick );
+
+	axis = (int *) calloc( num_of_axis, sizeof( int ) );
+	button = (char *) calloc( num_of_buttons, sizeof( char ) );
+
+	printf("Joystick detected: %s\n\t%d axis\n\t%d buttons\n\n"
+		, name_of_joystick
+		, num_of_axis
+		, num_of_buttons );
+
+	// use non-blocking mode 
+	fcntl( joy_fd, F_SETFL, O_NONBLOCK );	
+
+	// end of xbox one controller init
+
+
+	// Game super loop
 	while(1)
 	{
-
-
-
-		paddlePosition = getPaddle( 0 );
+		paddlePosition = getPaddle( 0, joy_fd );
 //		printf( "paddle: %i\n", paddlePosition );
 		drawPaddle1( paddlePosition );
 
 		circleLoc = getBallLoc();
 		drawBall( circleLoc );
 
-		paddlePosition = getPaddle( 1 );
+		paddlePosition = getPaddle( 1, joy_fd );
 //		printf( "paddle: %i\n", paddlePosition );
 		drawPaddle2( paddlePosition );
 
@@ -136,7 +168,7 @@ void drawBall( circleLocation_t ball )
 }
 
 
-unsigned getPaddle( unsigned id )
+unsigned getPaddle( unsigned id, int joy_fd )
 {
 	static unsigned direction1=0;
 	static unsigned direction2=0;
@@ -146,20 +178,66 @@ unsigned getPaddle( unsigned id )
 	unsigned direction;
 	int tmp;
 
+	struct js_event js;
+
+	// read xbox controller state
+	read(joy_fd, &js, sizeof(struct js_event));
+
+	switch (js.type & ~JS_EVENT_INIT)
+	{
+		case JS_EVENT_AXIS:
+			axis   [ js.number ] = js.value;
+			break;
+		case JS_EVENT_BUTTON:
+			button [ js.number ] = js.value;
+			break;
+	}
+
+	// scale +/-32768 into +/- 4
+//	axis[0] = axis[0] / 2048;
+	int leftY = ( axis[1] / ( 1024 * 8) );
+//	axis[2] = axis[2] / 2048;
+	int rightY = ( axis[3] / ( 1024 * 8) );
+
+
+		/* print the results */
+	printf( "X: %6d  Y: %6d  ", axis[0], leftY );
+	printf("Z: %6d  ", axis[2] );
+	printf("R: %6d  ", rightY );
+		
+//		for( x=0 ; x<num_of_buttons ; ++x )
+//			printf("B%d: %d  ", x, button[x] );
+
+//	printf("  \r");
+
 	if( id == 0 )
 	{
-		direction = direction1;
 		paddlePosition = paddlePosition1;
+		paddlePosition -= leftY;//paddlePosition1;
 	}
 	else
 	if( id == 1 )
 	{
-		direction = direction2;
 		paddlePosition = paddlePosition2;
+		paddlePosition -= rightY;//paddlePosition2;
+	}
+
+	printf( "    pos: %d\r", paddlePosition );
+	fflush(stdout);
+
+	if( paddlePosition > 210 )
+	{
+		paddlePosition = 210;
+	}
+
+	if( paddlePosition < 1 )
+	{
+		paddlePosition = 1;
 	}
 
 
-	tmp = rand() % 4;
+/*
+//	tmp = rand() % 4;
 	if( direction )
 	{
 		paddlePosition += tmp;
@@ -178,18 +256,18 @@ unsigned getPaddle( unsigned id )
 			direction = 1;
 		}
 	}
+*/
 
 	if( id == 0 )
 	{
-		direction1 = direction;
 		paddlePosition1 = paddlePosition;
 	}
 	else
 	if( id == 1 )
 	{
-		direction2 = direction;
 		paddlePosition2 = paddlePosition;
 	}
+
 
 	return paddlePosition;
 }

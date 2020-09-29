@@ -14,6 +14,8 @@
 #define X	( 0 )
 #define Y	( 1 )
 
+#define JOY_DEV "/dev/input/js0"
+
 
 typedef struct {
 	unsigned x;
@@ -32,7 +34,7 @@ void drawCircle( unsigned h, unsigned k, unsigned r );
 
 void drawPaddle1( unsigned y );
 void drawPaddle2( unsigned y );
-unsigned getPaddle( unsigned id );
+unsigned getPaddle( unsigned id, int joy_fd );
 
 circleLocation_t getBallLoc( void );
 void drawBall( circleLocation_t ball );
