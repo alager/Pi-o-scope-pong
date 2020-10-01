@@ -8,12 +8,18 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
+
+// this gives us access to the xbox controller
 #include <linux/joystick.h>
 
+// this gives us access to the gpio on the raspberry pi
 #include "pigpio.h"
 
+// this is our local header
 #include "xy.h"
 
+// globals for the xbox controller
+// will need to do something else if I add another controller
 int *axis = NULL;
 char *button = NULL;
 int num_of_axis = 0;
@@ -84,21 +90,24 @@ int main()
 	// end of xbox one controller init
 
 
-	// Game super loop
+	// *** Game super loop ***
 	while(1)
 	{
+		// draw game outline
+		drawRect( 0, 0, 255, 255 );
+
 		paddlePosition = getPaddle( 0, joy_fd );
-//		printf( "paddle: %i\n", paddlePosition );
+		//	printf( "paddle: %i\n", paddlePosition );
 		drawPaddle1( paddlePosition );
 
 		circleLoc = getBallLoc();
 		drawBall( circleLoc );
 
 		paddlePosition = getPaddle( 1, joy_fd );
-//		printf( "paddle: %i\n", paddlePosition );
+		//	printf( "paddle: %i\n", paddlePosition );
 		drawPaddle2( paddlePosition );
 
-
+		// animation delay
 		gpioDelay( 1500 );
 	}
 }
@@ -168,6 +177,7 @@ void drawBall( circleLocation_t ball )
 }
 
 
+// returns the Y location of the id paddle
 unsigned getPaddle( unsigned id, int joy_fd )
 {
 	static unsigned direction1=0;
@@ -194,21 +204,20 @@ unsigned getPaddle( unsigned id, int joy_fd )
 	}
 
 	// scale +/-32768 into +/- 4
-//	axis[0] = axis[0] / 2048;
+	//	axis[0]
 	int leftY = ( axis[1] / ( 1024 * 8) );
-//	axis[2] = axis[2] / 2048;
+	//	axis[2]
 	int rightY = ( axis[3] / ( 1024 * 8) );
 
 
-		/* print the results */
-	printf( "X: %6d  Y: %6d  ", axis[0], leftY );
-	printf("Z: %6d  ", axis[2] );
-	printf("R: %6d  ", rightY );
+	// print the results 
+	//printf( "X: %6d  Y: %6d  ", axis[0], leftY );
+	//printf("Z: %6d  ", axis[2] );
+	//printf("R: %6d  ", rightY );
 		
-//		for( x=0 ; x<num_of_buttons ; ++x )
-//			printf("B%d: %d  ", x, button[x] );
+	//	for( x=0 ; x<num_of_buttons ; ++x )
+	//		printf("B%d: %d  ", x, button[x] );
 
-//	printf("  \r");
 
 	if( id == 0 )
 	{
@@ -222,9 +231,10 @@ unsigned getPaddle( unsigned id, int joy_fd )
 		paddlePosition -= rightY;//paddlePosition2;
 	}
 
-	printf( "    pos: %d\r", paddlePosition );
-	fflush(stdout);
+	//printf( "    pos: %d\r", paddlePosition );
+	//fflush(stdout);
 
+	// check for out of bounds and set the limit
 	if( paddlePosition > 210 )
 	{
 		paddlePosition = 210;
@@ -237,7 +247,8 @@ unsigned getPaddle( unsigned id, int joy_fd )
 
 
 /*
-//	tmp = rand() % 4;
+	// random paddle position
+	tmp = rand() % 4;
 	if( direction )
 	{
 		paddlePosition += tmp;
@@ -258,6 +269,7 @@ unsigned getPaddle( unsigned id, int joy_fd )
 	}
 */
 
+	// put the paddle position into the static memory for next time
 	if( id == 0 )
 	{
 		paddlePosition1 = paddlePosition;
@@ -276,16 +288,17 @@ unsigned getPaddle( unsigned id, int joy_fd )
 #define PADDLE_SIZE (40)
 void drawPaddle1( unsigned y )
 {
-	drawRect( 0, y, 1, ( y + PADDLE_SIZE ) );
+	drawRect( 6, y, 6, ( y + PADDLE_SIZE ) );
 }
 
 
 void drawPaddle2( unsigned y )
 {
-	drawRect( 250, y, 250, ( y + PADDLE_SIZE ) );
+	drawRect( 249, y, 249, ( y + PADDLE_SIZE ) );
 }
 
 
+// writes the 8bit value to the DAC on the selected channel.
 void setData( unsigned data, unsigned xy )
 {
 	if( xy == X )
@@ -312,6 +325,7 @@ void setData( unsigned data, unsigned xy )
 	gpioWrite( D6, 0 );
 	gpioWrite( D7, 0 );
 	
+	// set the bits on the DAC
 	if( data & 0x01 )
 		gpioWrite( D0, 1 );
 	if( data & 0x02 )
@@ -330,8 +344,9 @@ void setData( unsigned data, unsigned xy )
 		gpioWrite( D7, 1 );
 	
 	
+	// toggle the WR pin to latch the data to the DAC output
 	gpioWrite( WR, 0 );
-
+	asm("nop");
 	gpioWrite( WR, 1 );
 }
 
@@ -362,13 +377,10 @@ void drawLine( unsigned x1, unsigned y1, unsigned x2, unsigned y2 )
 		if( y1 > y2 )
 			y1--;
 
+		// write the data to the DAC
 		setData( y1, Y );
-//		printf( "X: %i, Y: %i\n", x1, y1 );
-
-
 	}
 	while( ( x1 != x2 ) || ( y1 != y2 ) );
-//	gpioSleep( PI_TIME_RELATIVE, 0, tdelay );
 }
 
 

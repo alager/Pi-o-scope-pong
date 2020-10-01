@@ -18,8 +18,14 @@
 
 
 typedef struct {
+	// X location
 	unsigned x;
+
+	// Y location
 	unsigned y;
+
+	// miss (0=none, 1=player 1, 2 = player 2)
+	unsigned player;
 } circleLocation_t;
 
 
