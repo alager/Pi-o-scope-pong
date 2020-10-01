@@ -1,6 +1,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -26,6 +27,12 @@ int num_of_axis = 0;
 
 int main()
 {
+	int	 serveCount;
+	bool serve;
+	unsigned  paddlePosition1, paddlePosition2;
+	circleLocation_t circleLoc;
+	time_t t;
+
 	if ( gpioInitialise() < 0 )
 	{
 	   // pigpio initialisation failed.
@@ -54,11 +61,8 @@ int main()
 	// close the data latch
 	gpioWrite( WR, 1 );
 	
-	unsigned  paddlePosition;
-	circleLocation_t circleLoc;
 
 	/* Intializes random number generator */
-	time_t t;
 	srand((unsigned) time(&t));
 
 	
@@ -90,30 +94,84 @@ int main()
 	// end of xbox one controller init
 
 
+	// start the game off by serving
+	serveCount = SRV_DLY;
+
 	// *** Game super loop ***
 	while(1)
 	{
 		// draw game outline
 		drawRect( 0, 0, 255, 255 );
 
-		paddlePosition = getPaddle( 0, joy_fd );
-		//	printf( "paddle: %i\n", paddlePosition );
-		drawPaddle1( paddlePosition );
+		paddlePosition1 = getPaddle( 0, joy_fd );
+		//	printf( "paddle: %i\n", paddlePosition1 );
+		drawPaddle1( paddlePosition1 );
 
-		circleLoc = getBallLoc();
+		if( serveCount-- )
+		{
+			serve = true;
+		}
+		else
+		{
+			serve = false;
+			serveCount = 0;
+		}
+
+		circleLoc = getBallLoc( serve );
 		drawBall( circleLoc );
 
-		paddlePosition = getPaddle( 1, joy_fd );
-		//	printf( "paddle: %i\n", paddlePosition );
-		drawPaddle2( paddlePosition );
+		paddlePosition2 = getPaddle( 1, joy_fd );
+		//	printf( "paddle: %i\n", paddlePosition2 );
+		drawPaddle2( paddlePosition2 );
+
+		// check for miss
+		if( checkMiss( &circleLoc, paddlePosition1, paddlePosition2 ) )
+		{
+			serveCount = SRV_DLY ;
+		}
 
 		// animation delay
-		gpioDelay( 1500 );
+		// TODO: have button presses increase/decrease this value
+		gpioDelay( 1200 );
 	}
 }
 
 
-circleLocation_t getBallLoc( void )
+// check to see if a paddle missed the ball
+bool checkMiss( circleLocation_t * circleLoc, unsigned paddlePosition1, unsigned paddlePosition2 )
+{
+	if( circleLoc->x < ( PADDLE_1_X + BALL_DIAMETER ) )
+	{
+		//printf( "(%d, %d)\t", circleLoc->x, PADDLE_1_X  );
+		// check if the paddle is where the ball is
+		if( ( circleLoc->y > ( paddlePosition1 + PADDLE_SIZE ) ) 
+		||( circleLoc->y <  paddlePosition1 ) ) 
+		{
+			//printf( "(%d, %d)\n", circleLoc->y, (paddlePosition1 + PADDLE_SIZE )  );
+			circleLoc->player = PLAYER1;
+			return true;
+		}
+		//printf("\n");
+	}
+	else
+	if( circleLoc->x > ( PADDLE_2_X - BALL_DIAMETER ) )
+	{
+		if( ( circleLoc->y > ( paddlePosition2 + PADDLE_SIZE ) ) 
+		||( circleLoc->y <  paddlePosition2 ) ) 
+		{
+			circleLoc->player = PLAYER2;
+			return true;
+		}
+	}
+
+
+	circleLoc->player = NONE;
+
+	return false;
+}
+
+
+circleLocation_t getBallLoc( bool serve )
 {
 	static unsigned directionX = 0;
 	static unsigned directionY = 0;
@@ -122,45 +180,60 @@ circleLocation_t getBallLoc( void )
 	circleLocation_t ball;
 	int tmp;
 	
-	tmp = rand() % 2;
-
-	if( directionX )
+	if( serve )
 	{
-		ballPositionX += tmp;
-		if( ballPositionX > 240 )
-		{
-			ballPositionX = 240;
-			directionX = 0;
-		}
+		// hold the ball in the middle of the screen
+		ballPositionX = 128;
+		ballPositionY = 128;
+
+		// randomize the starting direction
+		tmp = rand() % 2;
+		directionX = tmp;
+		tmp = rand() % 2;
+		directionY = tmp;
 	}
 	else
 	{
-		ballPositionX -= tmp;
-		if( ballPositionX < 10 )
-		{
-			ballPositionX = 10;
-			directionX = 1;
-		}
-	}
+		tmp = rand() % 2;
 
-	tmp = rand() % 2;
-
-	if( directionY )
-	{
-		ballPositionY += tmp;
-		if( ballPositionY > 240 )
+		if( directionX )
 		{
-			ballPositionY = 240;
-			directionY = 0;
+			ballPositionX += tmp;
+			if( ballPositionX > BALL_MAX_X )
+			{
+				ballPositionX = BALL_MAX_X;
+				directionX = 0;
+			}
 		}
-	}
-	else
-	{
-		ballPositionY -= tmp;
-		if( ballPositionY < 10 )
+		else
 		{
-			ballPositionY = 10;
-			directionY = 1;
+			ballPositionX -= tmp;
+			if( ballPositionX < BALL_MIN_X )
+			{
+				ballPositionX = BALL_MIN_X;
+				directionX = 1;
+			}
+		}
+
+		tmp = rand() % 2;
+
+		if( directionY )
+		{
+			ballPositionY += tmp;
+			if( ballPositionY > BALL_MAX_Y )
+			{
+				ballPositionY = BALL_MAX_Y;
+				directionY = 0;
+			}
+		}
+		else
+		{
+			ballPositionY -= tmp;
+			if( ballPositionY < BALL_MIN_Y )
+			{
+				ballPositionY = BALL_MIN_Y;
+				directionY = 1;
+			}
 		}
 	}
 
@@ -173,25 +246,21 @@ circleLocation_t getBallLoc( void )
 
 void drawBall( circleLocation_t ball )
 {
-	drawCircle( ball.x, ball.y, 10 );
+	drawCircle( ball.x, ball.y, BALL_DIAMETER );
 }
 
 
 // returns the Y location of the id paddle
 unsigned getPaddle( unsigned id, int joy_fd )
 {
-	static unsigned direction1=0;
-	static unsigned direction2=0;
 	static int paddlePosition1 = 0;
 	static int paddlePosition2 = 0;
 	int paddlePosition = 0;
-	unsigned direction;
-	int tmp;
 
 	struct js_event js;
 
 	// read xbox controller state
-	read(joy_fd, &js, sizeof(struct js_event));
+	read( joy_fd, &js, sizeof( struct js_event ) );
 
 	switch (js.type & ~JS_EVENT_INIT)
 	{
@@ -285,16 +354,15 @@ unsigned getPaddle( unsigned id, int joy_fd )
 }
 
 
-#define PADDLE_SIZE (40)
 void drawPaddle1( unsigned y )
 {
-	drawRect( 6, y, 6, ( y + PADDLE_SIZE ) );
+	drawRect( PADDLE_1_X, y, PADDLE_1_X, ( y + PADDLE_SIZE ) );
 }
 
 
 void drawPaddle2( unsigned y )
 {
-	drawRect( 249, y, 249, ( y + PADDLE_SIZE ) );
+	drawRect( PADDLE_2_X, y, PADDLE_2_X, ( y + PADDLE_SIZE ) );
 }
 
 
@@ -393,6 +461,7 @@ void drawRect( unsigned x1, unsigned y1, unsigned x2, unsigned y2 )
 }
 
 
+// trig functions are in radians
 void drawCircle( unsigned h, unsigned k, unsigned r )
 {
 	float x,y;

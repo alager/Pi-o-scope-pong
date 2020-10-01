@@ -1,4 +1,17 @@
 
+#define SRV_DLY ( 100 )
+
+#define BALL_MAX_Y	( 240 )
+#define BALL_MAX_X	( 240 )
+#define BALL_MIN_Y	( 10 )
+#define BALL_MIN_X	( 10 )
+#define BALL_DIAMETER ( 10 )
+
+#define PADDLE_1_X	( 6 )
+#define PADDLE_2_X	( 249 )
+#define PADDLE_SIZE ( 40 )
+
+// configure our IO mappings for the DAC
 #define D0	(4)
 #define D1	(5)
 #define D2	(6)
@@ -13,6 +26,11 @@
 
 #define X	( 0 )
 #define Y	( 1 )
+
+#define NONE	( 1 )
+#define PLAYER1	( 1 )
+#define PLAYER2	( 2 )
+
 
 #define JOY_DEV "/dev/input/js0"
 
@@ -42,7 +60,7 @@ void drawPaddle1( unsigned y );
 void drawPaddle2( unsigned y );
 unsigned getPaddle( unsigned id, int joy_fd );
 
-circleLocation_t getBallLoc( void );
+circleLocation_t getBallLoc( bool serve );
 void drawBall( circleLocation_t ball );
 
-
+bool checkMiss( circleLocation_t * circleLoc, unsigned paddlePosition1, unsigned paddlePosition2 );
