@@ -64,3 +64,5 @@ circleLocation_t getBallLoc( bool serve );
 void drawBall( circleLocation_t ball );
 
 bool checkMiss( circleLocation_t * circleLoc, unsigned paddlePosition1, unsigned paddlePosition2 );
+
+void spashScreen( void );

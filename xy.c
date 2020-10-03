@@ -93,6 +93,13 @@ int main()
 
 	// end of xbox one controller init
 
+	serveCount = SRV_DLY * 10;
+	while( serveCount-- )
+	{
+		spashScreen();
+		gpioDelay( 1200 );
+		serveCount++;
+	}
 
 	// start the game off by serving
 	serveCount = SRV_DLY;
@@ -136,6 +143,36 @@ int main()
 	}
 }
 
+void spashScreen()
+{
+	// P
+	drawLine( 0, 200, 0, 255 );
+	drawLine( 0, 255, 15, 240 );
+	drawLine( 15, 240, 0, 230 ); 
+
+	// i
+	drawLine( 30, 200, 30, 220 );
+	drawLine( 30, 235, 30, 245 );
+
+
+	// P
+	drawLine( 75, 200, 75, 255 );
+	drawLine( 75, 255, 90, 240 );
+	drawLine( 90, 240, 75, 230 ); 
+
+	// o
+	drawCircle( 105, 210, 10 );
+
+	// n
+	drawLine( 135, 200, 135, 220 );
+	drawLine( 135, 220, 150, 220 );
+	drawLine( 150, 220, 150, 200 );
+	
+	// g
+	drawCircle( 175, 210, 10 );
+	drawLine( 185, 210, 185, 185 );
+	drawLine( 185, 185, 165, 185 );
+}
 
 // check to see if a paddle missed the ball
 // returns true on miss
@@ -179,13 +216,12 @@ bool checkMiss( circleLocation_t * circleLoc, unsigned paddlePosition1, unsigned
 		}
 	}
 
-
 	circleLoc->player = NONE;
-
 	return false;
 }
 
 
+// returns the new xy location of the ball
 circleLocation_t getBallLoc( bool serve )
 {
 	static unsigned directionX = 0;
@@ -287,12 +323,28 @@ unsigned getPaddle( unsigned id, int joy_fd )
 			break;
 	}
 
-	// scale +/-32768 into +/- 4
+	// scale +/-32768 into +/- 2
 	//	axis[0]
-	int leftY = ( axis[1] / ( 1024 * 8) );
-	//	axis[2]
-	int rightY = ( axis[3] / ( 1024 * 8) );
+	int leftY = 0;// = ( axis[1] / ( 1024 * 8) );
+	if( abs( axis[1] ) > 10000 )
+		leftY = 2;
 
+	// set the sign
+	if( axis[1] < 0 )
+		leftY *= -1;
+
+	//printf( "axis[1]: %d\tleftY: %d\n", axis[1], leftY );
+
+	//	axis[2]
+	int rightY = 0;// = ( axis[3] / ( 1024 * 8) );
+	if( abs( axis[3] ) > 10000 )
+		rightY = 2;
+
+	// set the sign
+	if( axis[3] < 0 )
+		rightY *= -1;
+
+	//printf( "axis[3]: %d\trightY: %d\n", axis[3], rightY );
 
 	// print the results 
 	//printf( "X: %6d  Y: %6d  ", axis[0], leftY );
@@ -306,13 +358,13 @@ unsigned getPaddle( unsigned id, int joy_fd )
 	if( id == 0 )
 	{
 		paddlePosition = paddlePosition1;
-		paddlePosition -= leftY;//paddlePosition1;
+		paddlePosition -= leftY;
 	}
 	else
 	if( id == 1 )
 	{
 		paddlePosition = paddlePosition2;
-		paddlePosition -= rightY;//paddlePosition2;
+		paddlePosition -= rightY;
 	}
 
 	//printf( "    pos: %d\r", paddlePosition );
