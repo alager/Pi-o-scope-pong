@@ -5,7 +5,7 @@
 #define BALL_MAX_X	( 240 )
 #define BALL_MIN_Y	( 10 )
 #define BALL_MIN_X	( 10 )
-#define BALL_DIAMETER ( 10 )
+#define BALL_RADIUS ( 10 )
 
 #define PADDLE_1_X	( 6 )
 #define PADDLE_2_X	( 249 )

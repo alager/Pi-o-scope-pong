@@ -138,14 +138,22 @@ int main()
 
 
 // check to see if a paddle missed the ball
+// returns true on miss
 bool checkMiss( circleLocation_t * circleLoc, unsigned paddlePosition1, unsigned paddlePosition2 )
 {
-	if( circleLoc->x < ( PADDLE_1_X + BALL_DIAMETER ) )
+	if( circleLoc->x < ( PADDLE_1_X + BALL_RADIUS ) )
 	{
 		//printf( "(%d, %d)\t", circleLoc->x, PADDLE_1_X  );
 		// check if the paddle is where the ball is
-		if( ( circleLoc->y > ( paddlePosition1 + PADDLE_SIZE ) ) 
-		||( circleLoc->y <  paddlePosition1 ) ) 
+		unsigned paddleTop = paddlePosition1 + PADDLE_SIZE + BALL_RADIUS;
+		if( paddleTop > 255 )
+			paddleTop = 255;
+
+		int paddleBottom = paddlePosition1 - BALL_RADIUS;
+		if( paddleBottom < 0 )
+			paddleBottom = 0;
+
+		if( ( circleLoc->y > paddleTop ) || ( circleLoc->y <  paddleBottom ) ) 
 		{
 			//printf( "(%d, %d)\n", circleLoc->y, (paddlePosition1 + PADDLE_SIZE )  );
 			circleLoc->player = PLAYER1;
@@ -154,10 +162,17 @@ bool checkMiss( circleLocation_t * circleLoc, unsigned paddlePosition1, unsigned
 		//printf("\n");
 	}
 	else
-	if( circleLoc->x > ( PADDLE_2_X - BALL_DIAMETER ) )
+	if( circleLoc->x > ( PADDLE_2_X - BALL_RADIUS ) )
 	{
-		if( ( circleLoc->y > ( paddlePosition2 + PADDLE_SIZE ) ) 
-		||( circleLoc->y <  paddlePosition2 ) ) 
+		unsigned paddleTop = paddlePosition2 + PADDLE_SIZE + BALL_RADIUS;
+		if( paddleTop > 255 )
+			paddleTop = 255;
+
+		int paddleBottom = paddlePosition2 - BALL_RADIUS;
+		if( paddleBottom < 0 )
+			paddleBottom = 0;
+
+		if( ( circleLoc->y > paddleTop ) || ( circleLoc->y <  paddleBottom ) ) 
 		{
 			circleLoc->player = PLAYER2;
 			return true;
@@ -246,7 +261,7 @@ circleLocation_t getBallLoc( bool serve )
 
 void drawBall( circleLocation_t ball )
 {
-	drawCircle( ball.x, ball.y, BALL_DIAMETER );
+	drawCircle( ball.x, ball.y, BALL_RADIUS );
 }
 
 
@@ -462,6 +477,7 @@ void drawRect( unsigned x1, unsigned y1, unsigned x2, unsigned y2 )
 
 
 // trig functions are in radians
+// input X, Y location and a radius
 void drawCircle( unsigned h, unsigned k, unsigned r )
 {
 	float x,y;
