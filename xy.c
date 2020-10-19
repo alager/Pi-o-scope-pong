@@ -93,13 +93,15 @@ int main()
 
 	// end of xbox one controller init
 
+
+	// show a splash screen for a few seconds
 	serveCount = SRV_DLY * 10;
 	while( serveCount-- )
 	{
 		spashScreen();
 		gpioDelay( 1200 );
-		serveCount++;
 	}
+
 
 	// start the game off by serving
 	serveCount = SRV_DLY;
@@ -173,6 +175,7 @@ void spashScreen()
 	drawLine( 185, 210, 185, 185 );
 	drawLine( 185, 185, 165, 185 );
 }
+
 
 // check to see if a paddle missed the ball
 // returns true on miss
