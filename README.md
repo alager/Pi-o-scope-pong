@@ -8,3 +8,5 @@ There are lots of improvements that can be made:<br>
 1. Finsh score keeping<br>
 2. Change the angle of ball delfection based on where the ball hits the paddle<br>
 3. Add sound for ball bouncing, etc.
+
+<img src="https://raw.github.com/alager/Pi-o-scope-pong/blob/master/Screenshot_20201018-192314.png">
