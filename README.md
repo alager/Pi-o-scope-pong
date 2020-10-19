@@ -3,3 +3,8 @@ It uses an 8 bit MAX506 DAC that I had left over from college ( over 20 years ag
 
 Build:  gcc -Wall -pthread -o xy xy.c -lpigpio -lrt -lm <br>
 Run:  sudo ./xy
+
+There are lots of improvements that can be made:<br>
+1. Finsh score keeping<br>
+2. Change the angle of ball delfection based on where the ball hits the paddle<br>
+3. Add sound for ball bouncing, etc.
